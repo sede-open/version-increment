@@ -9,30 +9,43 @@ on:
       - '**'
 
 jobs:
-#  lint:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#
-#      - name: Run ShellCheck
-#        uses: ludeeus/action-shellcheck@2.0.0
-#        with:
-#          check_together: 'yes'
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-#  test:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#
-#      - name: Setup bats
-#        uses: mig4/setup-bats@af9a00deb21b5d795cabfeaa8d9060410377686d  # v1.2.0
-#        with:
-#          bats-version: 1.8.0
-#
-#      - name: Test
-#        run: bats tests/*.bats
+      - name: Setup shellcheck
+        shell: bash
+        run: |
+          sudo apt update -y && sudo apt install -y shellcheck
+
+      - name: Run shellcheck
+        shell: bash
+        run: |
+          export SHELLCHECK_OPTS='--exclude=SC2154,SC1091'
+          shellcheck version-increment.sh
+          shellcheck version-lookup.sh
+          shellcheck shared.sh
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup bats
+        shell: bash
+        run: |
+          #git clone https://github.com/sstephenson/bats.git
+          #cd bats
+          #sudo ./install.sh /usr/local
+          git clone https://github.com/bats-core/bats-core.git
+          cd bats-core
+          sudo ./install.sh $HOME
+          #which bats
+      - name: Test
+        run: $HOME/bin/bats tests/*.bats
 
   test-api-mode:  # requires github API, didn't want to mock it
     runs-on: ubuntu-latest
@@ -69,8 +82,8 @@ jobs:
 
   test-action-yml:  # integration testing
     needs:
-#      - lint
-#      - test
+      - lint
+      - test
       - test-api-mode
     runs-on: ubuntu-latest
     steps:
